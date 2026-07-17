@@ -2,7 +2,7 @@ import { useDBStore } from "../store/dbStore";
 import { loginSchema, signupSchema } from "../schemas";
 import { User } from "../types";
 import { z } from "zod";
-import { supabase } from "../utils/supabaseClient";
+import { supabase, appConfig } from "../utils/supabaseClient";
 
 type LoginInput = z.infer<typeof loginSchema>;
 type SignupInput = z.infer<typeof signupSchema>;
@@ -10,7 +10,7 @@ type SignupInput = z.infer<typeof signupSchema>;
 const DELAY = 800; // Simulated latency
 
 const isRealSupabase = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = appConfig?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
   return !!url && !url.includes("placeholder-marketing-os");
 };
 
