@@ -857,10 +857,10 @@ export const JobRepository = {
             });
           }
           
-          // Limit to max 30 points to not overwhelm UI
-          if (historicalPoints.length > 30) {
-            const step = historicalPoints.length / 30;
-            historicalPoints = Array.from({ length: 30 }, (_, i) => historicalPoints[Math.floor(i * step)]);
+          // Limit to max 7 points (weekly snapshot) to aggressively save tokens (Cerebras TPM limits)
+          if (historicalPoints.length > 7) {
+            const step = historicalPoints.length / 7;
+            historicalPoints = Array.from({ length: 7 }, (_, i) => historicalPoints[Math.floor(i * step)]);
           }
           
           if (historicalPoints.length === 0) {
@@ -871,33 +871,26 @@ export const JobRepository = {
           // Compile client post briefs for the Cerebras LLM Prompt
           let postSummaries = "";
           items.slice(0, 2).forEach((item: any, idx: number) => {
-            const shortCaption = item.caption ? item.caption.substring(0, 100) + "..." : "No caption";
+            const shortCaption = item.caption ? item.caption.substring(0, 80) + "..." : "N/A";
             postSummaries += `Post ${idx + 1}:
-Url: ${item.url}
-Likes: ${item.likesCount}
-Comments: ${item.commentsCount}
-Audio Track: ${item.audioName || "Original Audio"} by ${item.audioArtistName || "Unknown"}
-Opening Hook: ${item.hook || "No hook detected"}
-Caption: "${shortCaption}"
+Likes:${item.likesCount || 0} Comms:${item.commentsCount || 0}
+Hook:${item.hook || "N/A"}
+Cap:"${shortCaption}"
 \n`;
           });
 
           // Compile competitor post briefs for comparative mapping
           let competitorSummaries = "";
           if (Array.isArray(competitorItems) && competitorItems.length > 0) {
-            // Compress context: take the top 5 highest engaging competitor posts for analysis
-            competitorItems.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0)).slice(0, 5).forEach((item: any, idx: number) => {
+            // Compress context: take the top 3 highest engaging competitor posts for analysis to save tokens
+            competitorItems.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0)).slice(0, 3).forEach((item: any, idx: number) => {
               const captionText = item.caption || item.description || "";
-              const shortCaption = captionText.substring(0, 100) + "...";
-              competitorSummaries += `Competitor Post ${idx + 1}:
-Owner Handle: @${item.ownerUsername || item.username || "competitor"}
-Url: ${item.url || item.original_url}
-Likes: ${item.likesCount || item.likes || 0}
-Comments: ${item.commentsCount || item.comments || 0}
-Views: ${item.videoViewCount || item.videoPlayCount || 0}
-Audio Track: ${item.audioName || "No audio detected"} by ${item.audioArtistName || "Unknown"}
-Opening Hook: ${item.hook || "No hook detected"}
-Caption: "${shortCaption}"
+              const shortCaption = captionText.substring(0, 80) + "...";
+              competitorSummaries += `Comp Post ${idx + 1}:
+User:@${item.ownerUsername || item.username || "comp"}
+Likes:${item.likesCount || item.likes || 0} Comms:${item.commentsCount || item.comments || 0}
+Hook:${item.hook || "N/A"}
+Cap:"${shortCaption}"
 \n`;
             });
           } else {
@@ -911,16 +904,17 @@ Caption: "${shortCaption}"
             if (brandDirectory.company_size) brandContext += `- Size: ${brandDirectory.company_size}\n`;
             if (brandDirectory.founded_year) brandContext += `- Founded: ${brandDirectory.founded_year}\n`;
             if (brandDirectory.company_kind) brandContext += `- Type: ${brandDirectory.company_kind}\n`;
-            if (brandDirectory.company_location) brandContext += `- Loc: ${typeof brandDirectory.company_location === 'object' ? `${brandDirectory.company_location.city || ''} ${brandDirectory.company_location.country || ''}` : brandDirectory.company_location}\n`;
-            if (brandDirectory.description) brandContext += `- Desc: ${brandDirectory.description}\n`;
-            if (brandDirectory.tagline) brandContext += `- Tagline: ${brandDirectory.tagline}\n`;
-            if (brandDirectory.mission) brandContext += `- Mission: ${brandDirectory.mission}\n`;
-            if (brandDirectory.products) brandContext += `- Offerings: ${brandDirectory.products}\n`;
-            if (brandDirectory.value_proposition) brandContext += `- Value Prop: ${brandDirectory.value_proposition}\n`;
-            if (brandDirectory.target_audience) brandContext += `- Target: ${brandDirectory.target_audience}\n`;
-            if (brandDirectory.brand_style) brandContext += `- Style: ${brandDirectory.brand_style}\n`;
-            if (brandDirectory.brand_voice_attributes) brandContext += `- Tone: ${JSON.stringify(brandDirectory.brand_voice_attributes)}\n`;
-            if (brandDirectory.brand_voice_avoid) brandContext += `- Avoid Tone: ${JSON.stringify(brandDirectory.brand_voice_avoid)}\n`;
+            const safeTrunc = (s: any) => typeof s === "string" ? s.substring(0, 100) : JSON.stringify(s).substring(0, 100);
+            if (brandDirectory.company_location) brandContext += `- Loc: ${safeTrunc(brandDirectory.company_location)}\n`;
+            if (brandDirectory.description) brandContext += `- Desc: ${safeTrunc(brandDirectory.description)}\n`;
+            if (brandDirectory.tagline) brandContext += `- Tagline: ${safeTrunc(brandDirectory.tagline)}\n`;
+            if (brandDirectory.mission) brandContext += `- Mission: ${safeTrunc(brandDirectory.mission)}\n`;
+            if (brandDirectory.products) brandContext += `- Offerings: ${safeTrunc(brandDirectory.products)}\n`;
+            if (brandDirectory.value_proposition) brandContext += `- Value Prop: ${safeTrunc(brandDirectory.value_proposition)}\n`;
+            if (brandDirectory.target_audience) brandContext += `- Target: ${safeTrunc(brandDirectory.target_audience)}\n`;
+            if (brandDirectory.brand_style) brandContext += `- Style: ${safeTrunc(brandDirectory.brand_style)}\n`;
+            if (brandDirectory.brand_voice_attributes) brandContext += `- Tone: ${safeTrunc(brandDirectory.brand_voice_attributes)}\n`;
+            if (brandDirectory.brand_voice_avoid) brandContext += `- Avoid: ${safeTrunc(brandDirectory.brand_voice_avoid)}\n`;
           } else {
             brandContext += "No specific Brandfetch context found.\n";
           }
@@ -995,7 +989,7 @@ Caption: "${shortCaption}"
             }
           };
 
-          let analysisResult: any = {
+        let analysisResult: any = {
             executiveSummary: "Analysis sync in progress...",
             timelineAnalysis: "Timeline sync in progress...",
             comparativeAnalysis: { clientWeaknesses: [], competitorStrengths: [] },
@@ -1004,10 +998,33 @@ Caption: "${shortCaption}"
           };
 
           try {
-            // Stage 1: Generate Deep Analysis
+            const isTwitter = campaign.platform === "twitter";
+            const scriptStructure = isTwitter ? `"contentScript": {
+    "platform": "twitter",
+    "captionDraft": "[Generate the exact text for the main tweet, keeping it under 280 characters]",
+    "visualProps": ["[Describe any optional image/meme attachment]"],
+    "videoScript": {
+      "hook": "[Generate the opening hook tweet (the scroll-stopper)]",
+      "body": "[Generate the core thread tweets, spreading out the value prop]",
+      "cta": "[Generate the final call to action tweet]"
+    },
+    "hashtags": ["#[Generate hashtag 1]", "#[Generate hashtag 2]"]
+  }` : `"contentScript": {
+    "platform": "${campaign.platform}",
+    "captionDraft": "[Generate the exact text for the caption, including emojis]",
+    "visualProps": ["[Generate prop 1]", "[Generate prop 2]", "[Generate lighting requirement]"],
+    "videoScript": {
+      "hook": "[Generate exactly what to say or show in the first 3 seconds]",
+      "body": "[Generate the core message and visual actions]",
+      "cta": "[Generate exactly what to say or show at the end to drive action]"
+    },
+    "hashtags": ["#[Generate hashtag 1]", "#[Generate hashtag 2]"]
+  }`;
+
+            // Generate Deep Analysis and Content Script in ONE single call to bypass strict API rate limits (TPM/RPM)
             const analysisPrompt = `
-You are an expert AI Marketing Analytics assistant.
-Based on the client posts, competitor posts, and the historical timeline, generate an analysis.
+You are an expert AI Marketing Analytics assistant and viral content strategist.
+Based on the client posts, competitor posts, and historical timeline, generate an analysis AND a highly viral content script for ${campaign.platform}.
 
 ${brandContext}
 Historical Engagement Timeline:
@@ -1018,6 +1035,9 @@ ${postSummaries}
 Competitor Posts:
 ${competitorSummaries}
 
+PLATFORM RULE: ${platformSpecificInstructions}
+CRITICAL INSTRUCTION: You MUST generate a highly creative, authentic 'contentScript' based on the hooks and data provided. Do NOT omit it!
+
 Your output must be a valid JSON object matching this EXACT structure:
 {
   "executiveSummary": "A numeric-backed diagnosis analyzing client feed performance vs competitors.",
@@ -1027,63 +1047,15 @@ Your output must be a valid JSON object matching this EXACT structure:
     "clientWeaknesses": ["Specific weakness 1", "Specific weakness 2"],
     "competitorStrengths": ["Specific strength 1", "Specific strength 2"]
   },
-  "growthOpportunities": ["[Generate growth vector 1]", "[Generate growth vector 2]"]
+  "growthOpportunities": ["[Generate growth vector 1]", "[Generate growth vector 2]"],
+  ${scriptStructure}
 }
 `;
             const analysisData = await callCerebras(analysisPrompt);
             analysisResult = { ...analysisResult, ...analysisData };
 
-            // Wait briefly to avoid strict rate limits
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            const isTwitter = campaign.platform === "twitter";
-            const scriptStructure = isTwitter ? `{
-  "contentScript": {
-    "platform": "twitter",
-    "captionDraft": "[Generate the exact text for the main tweet, keeping it under 280 characters]",
-    "visualProps": ["[Describe any optional image/meme attachment]"],
-    "videoScript": {
-      "hook": "[Generate the opening hook tweet (the scroll-stopper)]",
-      "body": "[Generate the core thread tweets, spreading out the value prop]",
-      "cta": "[Generate the final call to action tweet]"
-    },
-    "hashtags": ["#[Generate hashtag 1]", "#[Generate hashtag 2]"]
-  }
-}` : `{
-  "contentScript": {
-    "platform": "${campaign.platform}",
-    "captionDraft": "[Generate the exact text for the caption, including emojis]",
-    "visualProps": ["[Generate prop 1]", "[Generate prop 2]", "[Generate lighting requirement]"],
-    "videoScript": {
-      "hook": "[Generate exactly what to say or show in the first 3 seconds]",
-      "body": "[Generate the core message and visual actions]",
-      "cta": "[Generate exactly what to say or show at the end to drive action]"
-    },
-    "hashtags": ["#[Generate hashtag 1]", "#[Generate hashtag 2]"]
-  }
-}`;
-
-            // Stage 2: Generate Viral Content Script
-            const scriptPrompt = `
-You are an expert viral content strategist.
-Based on the following analysis of our brand and competitors, generate a highly viral content idea for ${campaign.platform}.
-
-Analysis: ${analysisResult.executiveSummary}
-Weaknesses to fix: ${JSON.stringify(analysisResult.comparativeAnalysis.clientWeaknesses)}
-Strengths to mimic: ${JSON.stringify(analysisResult.comparativeAnalysis.competitorStrengths)}
-
-PLATFORM RULE: ${platformSpecificInstructions}
-BRAND RULE: You MUST adhere to the brand's Voice Attributes (DO and DON'T) closely. Emphasize their Value Proposition specifically to their Target Audience.
-CRITICAL INSTRUCTION: You MUST generate a highly creative, authentic 'contentScript' based on the hooks and data provided. Do NOT omit it!
-
-Your output must be a valid JSON object matching this EXACT structure:
-${scriptStructure}
-`;
-            const scriptData = await callCerebras(scriptPrompt);
-            analysisResult.contentScript = scriptData.contentScript || analysisResult.contentScript;
-
           } catch (e) {
-            console.warn("Cerebras AI Insight generation failed or partially failed:", e);
+            console.warn("AI Insight generation failed or partially failed:", e);
             // We intentionally do NOT throw here so that whatever data we extracted (or fallback data) is saved,
             // preventing the UI from completely breaking during a rate limit event.
           }
