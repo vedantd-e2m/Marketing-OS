@@ -200,6 +200,7 @@ export const Dashboard: React.FC = () => {
 
   // State A: Empty state (No clients created yet)
   if (clients.length === 0) {
+    const isClientRole = currentUser?.role === "client";
     return (
       <div className="space-y-6 animate-fadeIn">
         {brandDirectory && <BrandDirectoryCard brandDirectory={brandDirectory} />}
@@ -208,15 +209,23 @@ export const Dashboard: React.FC = () => {
             <Building className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-bold tracking-tight">You don't have any clients yet.</h2>
+            <h2 className="text-xl font-bold tracking-tight">
+              {isClientRole ? "Your profile is being set up." : "You don't have any clients yet."}
+            </h2>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Marketing OS organizes your campaigns and performance analytics underneath client profiles. Register your first client to unlock the system dashboard.
+              {isClientRole 
+                ? "Your agency hasn't linked your client profile yet. Please check back later or contact your account manager."
+                : "Marketing OS organizes your campaigns and performance analytics underneath client profiles. Register your first client to unlock the system dashboard."}
             </p>
           </div>
-          <Button onClick={() => setIsClientModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" /> Create Client
-          </Button>
-          <CreateClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} />
+          {!isClientRole && (
+            <Button onClick={() => setIsClientModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Create Client
+            </Button>
+          )}
+          {!isClientRole && (
+            <CreateClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} />
+          )}
         </div>
       </div>
     );
