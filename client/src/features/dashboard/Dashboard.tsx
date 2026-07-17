@@ -286,10 +286,10 @@ export const Dashboard: React.FC = () => {
       ) : (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
               Dashboard Overview
               {selectedClientId && selectedClientId !== "all" && clients.find(c => c.id === selectedClientId) && (
-                <span className="text-muted-foreground font-medium text-xl"> — {clients.find(c => c.id === selectedClientId)?.name}</span>
+                <> - {clients.find(c => c.id === selectedClientId)?.name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}</>
               )}
             </h1>
             <p className="text-sm text-muted-foreground">
