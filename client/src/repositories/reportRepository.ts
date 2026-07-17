@@ -1,9 +1,9 @@
 import { Report } from "../types";
-import { supabase } from "../utils/supabaseClient";
+import { supabase, appConfig } from "../utils/supabaseClient";
 import { useDBStore } from "../store/dbStore";
 
 const isRealSupabase = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = appConfig?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
   return !!url && !url.includes("placeholder-marketing-os");
 };
 

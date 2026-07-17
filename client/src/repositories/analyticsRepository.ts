@@ -1,9 +1,9 @@
 import { UnifiedCampaignAnalytics, AnalyticsHistoryPoint, PostMetric, AIInsight } from "../types";
-import { supabase } from "../utils/supabaseClient";
+import { supabase, appConfig } from "../utils/supabaseClient";
 import { MockGenerator } from "../utils/mockGenerator";
 
 const isRealSupabase = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = appConfig?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
   return !!url && !url.includes("placeholder-marketing-os");
 };
 
