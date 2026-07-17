@@ -299,9 +299,9 @@ export const Dashboard: React.FC = () => {
                 onChange={(e) => useFilterStore.getState().setSelectedClientId(e.target.value)}
                 className="bg-transparent border-none outline-none font-medium cursor-pointer text-sm"
               >
-                <option value="all">All Clients</option>
+                <option value="all" className="bg-background text-foreground">All Clients</option>
                 {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} className="bg-background text-foreground">
                     {c.name}
                   </option>
                 ))}
