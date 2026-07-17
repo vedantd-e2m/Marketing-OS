@@ -152,19 +152,28 @@ export const AnalyticsRepository = {
 
       const posts = (data as any).map((item: any, idx: number) => {
         const content = JSON.parse(item.content);
+        
+        // Handle various Apify scraping output formats for robustness
+        const likes = content.likesCount || content.likes || content.numLikes || content.favorite_count || content.favoriteCount || 0;
+        const comments = content.commentsCount || content.comments || content.numComments || content.replyCount || content.replies || content.reply_count || 0;
+        const shares = content.sharesCount || content.shares || content.numShares || content.retweetCount || content.retweets || content.retweet_count || 0;
+        const saves = content.savesCount || content.saves || content.bookmarkCount || content.bookmark_count || content.bookmarks || 0;
+        const img = content.displayUrl || content.imageUrl || content.image_url || content.thumbnailUrl || content.thumbnail_url || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=400&fit=crop";
+
         return {
           id: item.id,
-          caption: content.caption || "",
-          imageUrl: content.displayUrl || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=400&fit=crop",
-          publishedAt: content.timestamp || item.created_at,
-          likes: content.likesCount || 0,
-          comments: content.commentsCount || 0,
-          shares: content.sharesCount || 0,
-          saves: content.savesCount || 0,
-          engagementRate: Number((((content.likesCount || 0) + (content.commentsCount || 0)) / 1000).toFixed(2)),
+          caption: content.caption || content.text || content.full_text || "",
+          imageUrl: img,
+          displayUrl: img, // Ensure displayUrl is set for Dashboard
+          publishedAt: content.timestamp || content.created_at || content.publishedAt || item.created_at,
+          likes,
+          comments,
+          shares,
+          saves,
+          engagementRate: Number(((likes + comments) / 1000).toFixed(2)),
           sentiment: (idx % 2 === 0 ? "positive" : "neutral") as "positive" | "neutral" | "negative",
           url: content.url || content.original_url || "",
-          ownerUsername: content.ownerUsername || content.owner_username || "",
+          ownerUsername: content.ownerUsername || content.owner_username || content.username || "",
           audioName: content.audioName || content.audio_name || "",
           audioArtistName: content.audioArtistName || content.audio_artist_name || "",
           hook: content.hook || "",
