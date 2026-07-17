@@ -284,20 +284,35 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
             <p className="text-sm text-muted-foreground">
               Monitor client acquisition health and dynamic campaign performance.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-background border border-border rounded-md px-3 py-1.5 shadow-sm">
+              <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Client:</span>
+              <select
+                value={selectedClientId}
+                onChange={(e) => useFilterStore.getState().setSelectedClientId(e.target.value)}
+                className="bg-transparent border-none outline-none font-medium cursor-pointer text-sm"
+              >
+                <option value="all">All Clients</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Button variant="outline" size="sm" onClick={handleRefresh} className="h-9 gap-1.5 cursor-pointer">
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
             <Button size="sm" onClick={() => setIsCampaignModalOpen(true)} className="h-9 gap-1.5 cursor-pointer">
-              <Plus className="h-4 w-4" /> Launch Campaign
+              <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Launch Campaign</span>
             </Button>
           </div>
         </div>

@@ -89,7 +89,7 @@ export const ClientProfileHeader: React.FC<ClientProfileHeaderProps> = ({ client
                   }
 
                   return (
-                    <div className="flex flex-wrap gap-2.5 relative z-40">
+                    <div className="flex flex-wrap gap-2.5 relative z-20">
                       {list.map((comp: any, idx: number) => {
                         if (!comp.name) return null;
                         const isOpen = openDropdownIdx === idx;
