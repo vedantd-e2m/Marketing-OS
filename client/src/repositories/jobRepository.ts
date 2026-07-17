@@ -550,24 +550,24 @@ export const JobRepository = {
                    enhanceUserSearchWithFacebookPage: false,
                    isUserReelFeedURL: false,
                    isUserTaggedFeedURL: false,
-                   resultsLimit: 10,
+                   resultsLimit: 20,
                    resultsType: "posts",
                    searchLimit: 1,
                    searchType: "hashtag"
                  };
 
                } else if (platformType === "twitter") {
-                 compRequestBody = { twitterHandles: handles, maxItems: 10 };
+                 compRequestBody = { twitterHandles: handles, maxItems: 20 };
                } else if (platformType === "linkedin") {
                  compRequestBody = {
                    urls: startUrls,
-                   limitPerSource: 10,
+                   limitPerSource: 20,
                    deepScrape: true
                  };
                } else {
                  compRequestBody = {
                    startUrls: startUrls.map(url => ({ url })),
-                   maxPosts: 10
+                   maxPosts: 20
                  };
                }
 
@@ -590,27 +590,18 @@ export const JobRepository = {
                const crawledPosts = await profilesRes.json();
                 
                 if (Array.isArray(crawledPosts) && crawledPosts.length > 0) {
-                  // Step 2: Relevance Filter based on Client Industry keywords and caption
-                  const keywordTargets = [
-                    clientIndustry,
-                    ...clientIndustry.split(" "),
-                    ...(items[0]?.caption || items[0]?.text || items[0]?.title || "").toLowerCase().split(/\s+/)
-                  ]
-                    .map(w => w.replace(/[^\w]/g, "").toLowerCase())
-                    .filter(w => w.length > 3);
-
+                  // Step 2: Strictly filter to ensure we ONLY include posts from the competitor brands (no random ones)
                   let matchedCompetitorPosts = crawledPosts.filter((post: any) => {
-                    const captionText = (post.caption || post.description || post.text || post.title || "").toLowerCase();
-                    return keywordTargets.some(kw => captionText.includes(kw));
+                    const postOwner = (post.ownerUsername || post.username || post.owner_username || "").toLowerCase();
+                    return competitorBrands.some(brand => brand.toLowerCase() === postOwner);
                   });
 
-                  // If strict matching yields fewer than 10 posts, pad with the rest of the posts to ensure we always have enough volume
-                  if (matchedCompetitorPosts.length < 10) {
-                    const remainingPosts = crawledPosts.filter((p: any) => !matchedCompetitorPosts.some((mp: any) => mp.url === p.url));
-                    matchedCompetitorPosts = [...matchedCompetitorPosts, ...remainingPosts].slice(0, 10);
+                  // If somehow the scraper returned flat data without usernames, fallback to all of them 
+                  if (matchedCompetitorPosts.length === 0) {
+                    matchedCompetitorPosts = crawledPosts;
                   }
 
-                  // Step 3: Sort by Engagement rate in decreasing order
+                  // Step 3: Sort strictly by Engagement rate in decreasing order
                   matchedCompetitorPosts.forEach((post: any) => {
                     const likes = post.likesCount || post.likes || post.numLikes || post.upvotes || post.score || 0;
                     const comments = post.commentsCount || post.comments || post.numComments || post.commentsNum || 0;
@@ -618,8 +609,8 @@ export const JobRepository = {
                   });
                   matchedCompetitorPosts.sort((a, b) => b.engagementMetric - a.engagementMetric);
 
-                  // Step 4: Take up to 10 top competitor reels for the UI
-                  const topCompetitorPosts = matchedCompetitorPosts.slice(0, 10);
+                  // Step 4: Take up to 15 top strictly competitor reels for the UI
+                  const topCompetitorPosts = matchedCompetitorPosts.slice(0, 15);
                   const competitorUrls = topCompetitorPosts.map((post: any) => post.url || post.original_url || post.postUrl).filter(Boolean);
 
                   // Invoke hooks competitor analyzer actor on these specific URLs to get music and hooks
