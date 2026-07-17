@@ -218,26 +218,28 @@ export const Reports: React.FC = () => {
                     {/* KPI Numbers Grid */}
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Key Metrics Aggregations</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="p-3 border border-border rounded text-center">
-                          <div className="text-xxs text-muted-foreground uppercase">Reach</div>
-                          <div className="text-base font-bold mt-0.5">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 border border-border rounded text-center min-w-0 flex flex-col justify-center">
+                          <div className="text-[10px] sm:text-xxs text-muted-foreground uppercase truncate" title="Reach">Reach</div>
+                          <div className="text-sm sm:text-base font-bold mt-0.5 truncate" title={new Intl.NumberFormat("en-US").format(activeReport.kpis.reach)}>
                             {new Intl.NumberFormat("en-US").format(activeReport.kpis.reach)}
                           </div>
                         </div>
-                        <div className="p-3 border border-border rounded text-center">
-                          <div className="text-xxs text-muted-foreground uppercase">Impressions</div>
-                          <div className="text-base font-bold mt-0.5">
+                        <div className="p-2 sm:p-3 border border-border rounded text-center min-w-0 flex flex-col justify-center">
+                          <div className="text-[10px] sm:text-xxs text-muted-foreground uppercase truncate" title="Impressions">Impressions</div>
+                          <div className="text-sm sm:text-base font-bold mt-0.5 truncate" title={new Intl.NumberFormat("en-US").format(activeReport.kpis.impressions)}>
                             {new Intl.NumberFormat("en-US").format(activeReport.kpis.impressions)}
                           </div>
                         </div>
-                        <div className="p-3 border border-border rounded text-center">
-                          <div className="text-xxs text-muted-foreground uppercase">Engagement</div>
-                          <div className="text-base font-bold mt-0.5">{activeReport.kpis.engagementRate}%</div>
+                        <div className="p-2 sm:p-3 border border-border rounded text-center min-w-0 flex flex-col justify-center">
+                          <div className="text-[10px] sm:text-xxs text-muted-foreground uppercase truncate" title="Engagement">Engagement</div>
+                          <div className="text-sm sm:text-base font-bold mt-0.5 truncate" title={activeReport.kpis.engagementRate + "%"}>
+                            {activeReport.kpis.engagementRate}%
+                          </div>
                         </div>
-                        <div className="p-3 border border-border rounded text-center">
-                          <div className="text-xxs text-muted-foreground uppercase">Followers Gained</div>
-                          <div className="text-base font-bold mt-0.5">
+                        <div className="p-2 sm:p-3 border border-border rounded text-center min-w-0 flex flex-col justify-center">
+                          <div className="text-[10px] sm:text-xxs text-muted-foreground uppercase truncate" title="Followers Gained">Followers Gained</div>
+                          <div className="text-sm sm:text-base font-bold mt-0.5 truncate" title={"+" + new Intl.NumberFormat("en-US").format(activeReport.kpis.followersGained)}>
                             +{new Intl.NumberFormat("en-US").format(activeReport.kpis.followersGained)}
                           </div>
                         </div>
