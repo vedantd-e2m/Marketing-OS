@@ -124,7 +124,7 @@ export const AuthService = {
       // If email confirmation is disabled, they are logged in immediately.
       // App.tsx's onAuthStateChange will automatically fetch the profile and set currentUser.
     } else {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         setTimeout(() => {
           if (data.email === "exists@marketingos.com") {
             reject(new Error("An account with this email address already exists."));
