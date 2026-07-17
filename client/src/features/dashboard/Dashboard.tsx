@@ -487,9 +487,15 @@ export const Dashboard: React.FC = () => {
                     {(() => {
                       const currentUser = useDBStore.getState().currentUser;
                       const isClient = currentUser?.role === 'client';
-                      const displayCampaigns = isClient 
-                        ? campaigns.filter(c => c.clientId === currentUser.clientId).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-                        : [...campaigns].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+                      let displayCampaigns = [...campaigns];
+                      
+                      if (isClient && currentUser?.clientId) {
+                        displayCampaigns = displayCampaigns.filter(c => c.clientId === currentUser.clientId);
+                      } else if (selectedClientId && selectedClientId !== 'all') {
+                        displayCampaigns = displayCampaigns.filter(c => c.clientId === selectedClientId);
+                      }
+                      
+                      displayCampaigns.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
                       
                       return displayCampaigns.slice(0, 5).map((c) => {
                         const clientName = clients.find((client) => client.id === c.clientId)?.name || "Unknown";
