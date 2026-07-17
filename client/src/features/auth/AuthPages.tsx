@@ -61,9 +61,14 @@ export const AuthPages: React.FC = () => {
   const onSignupSubmit = async (data: z.infer<typeof signupSchema>) => {
     setIsLoading(true);
     try {
-      await AuthService.signup(data);
-      toast.success("Account created successfully! Welcome to Marketing OS.");
-      navigate("/");
+      const result = await AuthService.signup(data);
+      if (result && result.requiresEmailVerification) {
+        toast.success("Account created! Please check your email to verify your account.", { duration: 10000 });
+        setMode("login");
+      } else {
+        toast.success("Account created successfully! Welcome to Marketing OS.");
+        navigate("/");
+      }
     } catch (err: any) {
       toast.error(err.message || "Signup failed");
     } finally {

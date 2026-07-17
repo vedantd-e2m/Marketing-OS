@@ -96,48 +96,33 @@ export const AuthService = {
     }
   },
 
-  signup: async (data: SignupInput): Promise<void> => {
+  signup: async (data: SignupInput): Promise<any> => {
     if (isRealSupabase()) {
       // 1. Sign up with Supabase Auth
+      // The database trigger (on_auth_user_created) will automatically handle the profile and org creation 
+      // using the metadata provided in 'options.data'.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            first_name: data.firstName,
+            last_name: data.lastName,
+            role: "owner"
+          }
+        }
       });
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error("Could not register user account.");
 
-      // 2. Create organization
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert([{ name: `${data.firstName}'s Agency` }])
-        .select()
-        .single();
+      // If session is null, it means email confirmation is required.
+      if (!authData.session) {
+        return { requiresEmailVerification: true };
+      }
 
-      if (orgError) throw new Error(orgError.message);
-
-      // 3. Create user profile row
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert([{
-          id: authData.user.id,
-          organization_id: org.id,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          email: data.email,
-          role: "owner"
-        }]);
-
-      if (profileError) throw new Error(profileError.message);
-
-      useDBStore.getState().setCurrentUser({
-        id: authData.user.id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        organizationId: org.id,
-        role: "owner",
-      });
+      // If email confirmation is disabled, they are logged in immediately.
+      // App.tsx's onAuthStateChange will automatically fetch the profile and set currentUser.
     } else {
       return new Promise((resolve, reject) => {
         setTimeout(() => {

@@ -107,52 +107,39 @@ router.post('/invite-client', requireAuth, requireRole(['manage_users']), async 
       return res.status(404).json({ error: 'Organization not found' });
     }
 
-    // 1. Generate Invite Link via Supabase Auth Admin API (bypasses email delivery)
-    let { data: authData, error: authErr } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'invite',
-      email: email,
-      options: {
-        redirectTo: redirectTo || 'http://localhost:5173/login'
-      }
-    });
-    
-    // Fallback if the user already exists in auth.users
-    if (authErr && (authErr as any).code === 'email_exists') {
-      const magicLinkRes = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: email,
-        options: {
-          redirectTo: redirectTo || 'http://localhost:5173/login'
-        }
-      });
-      authData = magicLinkRes.data;
-      authErr = magicLinkRes.error;
-    }
-
-    if (authErr) throw authErr;
-    if (!authData.user) throw new Error("User creation failed");
-
-    // 2. Map the new auth user to the public users table with role 'client'
-    const { data: newUser, error: dbErr } = await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: authData.user.id,
-        email: email,
+    // 1. Invite User via Supabase Auth Admin API (Automatically sends email)
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: {
         first_name: firstName,
         last_name: lastName,
         role: 'client',
         client_id: clientId,
-        organization_id: currentUserProfile.organization_id,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-      
-    if (dbErr) throw dbErr;
+        organization_id: currentUserProfile.organization_id
+      },
+      redirectTo: redirectTo || 'http://localhost:5173/update-password'
+    });
+    
+    if (authErr) {
+      if ((authErr as any).code === 'email_exists') {
+        return res.status(400).json({ error: 'This email is already registered.' });
+      }
+      throw authErr;
+    }
+    
+    if (!authData.user) throw new Error("User creation failed");
 
-    res.json({
-      user: newUser,
-      action_link: authData.properties?.action_link
+    // The database trigger (on_auth_user_created) will automatically handle the profile creation 
+    // in the 'users' table using the metadata provided above!
+
+    res.json({ 
+      user: {
+        id: authData.user.id,
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        role: 'client'
+      },
+      message: 'Invite email sent successfully'
     });
   } catch (error: any) {
     console.error('Invite Client Error:', error);
