@@ -43,9 +43,11 @@ router.post(/^\/cerebras\/(.*)/, requireAuth, requireRole(['execute']), async (r
     const url = `https://api.cerebras.ai/${targetPath}`;
 
     const cerebrasKey = process.env.CEREBRAS_API_KEY || '';
-    const cerebrasModel = process.env.CEREBRAS_MODEL || 'llama-3.1-8b';
+    
+    // Strictly respect the user's .env definition without any 'llama' fallback or auto-routing
+    const selectedModel = process.env.CEREBRAS_MODEL;
 
-    const reqBody = { ...req.body, model: cerebrasModel };
+    const reqBody = { ...req.body, model: selectedModel };
 
     const response = await fetch(url, {
       method: 'POST',
